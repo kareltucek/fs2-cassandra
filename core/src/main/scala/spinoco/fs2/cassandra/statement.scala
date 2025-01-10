@@ -15,7 +15,7 @@ sealed trait CStatement[I] {
   /** raw cql statement used for preparing the statement **/
   def cqlStatement:String
   /** fills prepared statement with any `I` to form bound statement **/
-  def fill(i:I, s:PreparedStatement, protocolVersion: ProtocolVersion): BoundStatementBuilder
+  def fill(i:I, s:PreparedStatement, protocolVersion: ProtocolVersion): BoundStatement
 
 
 }

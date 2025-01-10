@@ -1,15 +1,12 @@
 package spinoco.fs2.cassandra
 
-import cats.{Applicative, Monad}
-import cats.data.OptionT
+import cats.{Applicative}
 import cats.effect._
-import cats.effect.concurrent.Ref
 import cats.implicits._
 import com.datastax.oss.driver.api.core.cql._
 import com.datastax.oss.driver.api.core.{CqlSession, CqlSessionBuilder, ProtocolVersion}
 import fs2._
 import shapeless.HNil
-import spinoco.fs2.cassandra.CassandraSession.impl.SessionState
 import spinoco.fs2.cassandra.util.StatementHelper
 import spinoco.fs2.cassandra.util.concurrent._
 
@@ -96,6 +93,7 @@ object CassandraSession {
   def instance[F[_]
   : Async
   : ContextShift
+  : StatementHelper
   ](sessionBuilder: CqlSessionBuilder): Resource[F,CassandraSession[F]] = {
 
     def buildCqlSession : F[CqlSession] =
@@ -107,7 +105,8 @@ object CassandraSession {
 
     Resource.make(
       Sync[F].suspend(buildCqlSession).flatMap { cqlSession =>
-        impl.mkSession[F](cqlSession, ???).map { cs => (cs, cqlSession) }
+        val protocolVersion = cqlSession.getContext.getProtocolVersion;
+        impl.mkSession[F](cqlSession, protocolVersion).map { cs => (cs, cqlSession) }
       }
     )({ case (_, cqlSession) => closeSession(cqlSession) })
     .flatMap { case (cs, _) => Resource.pure(cs) }
@@ -141,8 +140,10 @@ object CassandraSession {
         def migrateDDL(ddl: SchemaDDL): F[Seq[String]] =
           CassandraSession.migrateDDL(ddl)
 
-        def execute[I, R](statement: DMLStatement[I, R], o: DMLOptions = Options.defaultDML)(i: I): F[R] =
-          CassandraSession.executeDML(statement, o, i)
+        def execute[I, R](statement: DMLStatement[I, R], o: DMLOptions = Options.defaultDML)(i: I): F[R] = {
+          implicit def cqlSession_ = cqlSession
+          CassandraSession.executeDML(statement, o, i, protocolVersion)
+        }
 
         def executeRaw[T <: Statement[T]](statement: T): F[AsyncResultSet] =
           Sync[F].suspend(cqlSession.executeAsync(statement).toF[F])
@@ -279,18 +280,20 @@ object CassandraSession {
 //      .flatMap { row => query.read(row, protocolVersion).fold[Stream[F, R]](Stream.raiseError[F],Stream.emit) }
   }
 
-  def executeDML[F[_]
-  : Async
-  : StatementHelper
-    , I, R](statement: DMLStatement[I, R], o: DMLOptions, i: I, version: ProtocolVersion)(implicit cqlSession: CqlSession): F[R] = {
+  def executeDML[
+    F[_]
+    : Async
+    : StatementHelper
+    , I, R
+  ](statement: DMLStatement[I, R], o: DMLOptions, i: I, version: ProtocolVersion)(implicit cqlSession: CqlSession): F[R] = {
     StatementHelper[F].prepare(statement.cqlStatement).flatMap { ps =>
       val builder = statement.fill(i, ps, version) //todo: apply options
       Sync[F].suspend(cqlSession.executeAsync(builder.build()).toF)
     }
 
-    mkStatement(statement,i).flatMap { bs =>
+    mkStatement[F,I](statement,i).flatMap { bs =>
       Sync[F].suspend(cqlSession.executeAsync(bs).toF).flatMap { rs =>
-        Sync[F].rethrow(Applicative[F].pure(statement.read(rs,protocolVersion)))
+        Sync[F].rethrow(Applicative[F].pure(statement.read(rs,version)))
       }}
   }
 
