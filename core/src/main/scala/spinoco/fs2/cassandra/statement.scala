@@ -1,7 +1,7 @@
 package spinoco.fs2.cassandra
 
 import com.datastax.oss.driver.api.core.ProtocolVersion
-import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, BoundStatement, BoundStatementBuilder, PreparedStatement, Row}
+import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, BoundStatement, PreparedStatement, Row}
 import shapeless.ops.hlist.Tupler
 import shapeless.ops.product.ToHList
 import shapeless.ops.record.Values
@@ -52,7 +52,7 @@ trait Query[Q,R] extends CStatement[Q] { self =>
       def cqlFor(q: I): String = self.cqlFor(f(q))
       def writeRaw(q: I, protocolVersion: ProtocolVersion): Map[String, ByteBuffer] = self.writeRaw(f(q), protocolVersion)
       def read(r: Row, protocolVersion: ProtocolVersion): Either[Throwable, R] = self.read(r,protocolVersion)
-      def fill(i: I, s: PreparedStatement, protocolVersion: ProtocolVersion): BoundStatementBuilder = self.fill(f(i),s,protocolVersion)
+      def fill(i: I, s: PreparedStatement, protocolVersion: ProtocolVersion): BoundStatement = self.fill(f(i),s,protocolVersion)
       override def toString: String = self.toString
     }
   }
@@ -64,7 +64,7 @@ trait Query[Q,R] extends CStatement[Q] { self =>
       def cqlFor(q: Q): String = self.cqlFor(q)
       def writeRaw(q: Q, protocolVersion: ProtocolVersion): Map[String, ByteBuffer] = self.writeRaw(q, protocolVersion)
       def read(r: Row, protocolVersion: ProtocolVersion): Either[Throwable, O] = self.read(r,protocolVersion).right.map(f)
-      def fill(i: Q, s: PreparedStatement, protocolVersion: ProtocolVersion): BoundStatementBuilder = self.fill(i,s,protocolVersion)
+      def fill(i: Q, s: PreparedStatement, protocolVersion: ProtocolVersion): BoundStatement = self.fill(i,s,protocolVersion)
       override def toString: String = self.toString
     }
   }

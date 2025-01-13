@@ -35,7 +35,7 @@ case class BatchBuilder[Q <: HList, R <: HList] (
         case None => Left(new Throwable(s"Failed do bind prepeared statement (no prepared statement found) ${dml.cqlStatement}"))
         case Some(ps) =>
           self.fill(iq.tail,stmts.tail, protocolVersion).right
-            .map { dml.fill(iq.head,ps,protocolVersion).build() +: _  }
+            .map { dml.fill(iq.head,ps,protocolVersion) +: _  }
       }
     }
 

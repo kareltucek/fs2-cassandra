@@ -2,7 +2,7 @@ package spinoco.fs2.cassandra
 
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel
-import com.datastax.oss.driver.api.core.cql.PagingState
+import com.datastax.oss.driver.api.core.cql.{BoundStatement, PagingState}
 import com.datastax.oss.driver.api.core.retry.RetryPolicy
 
 import scala.concurrent.duration.FiniteDuration
@@ -202,7 +202,7 @@ object Options {
 //    ???
 //  }
 //
-//  private[cassandra] def applyDMLOptions[S <: Statement](stmt:S, o:DMLOptions):S = {
+  private[cassandra] def applyDMLOptions[S <: BoundStatement](stmt:S, o:DMLOptions):S = ??? // {
 ////    o.consistencyLevel.foreach(stmt.setConsistencyLevel)
 ////    o.serialConsistencyLevel.foreach(stmt.setSerialConsistencyLevel)
 ////    o.retryPolicy.foreach(stmt.setRetryPolicy)

@@ -98,6 +98,10 @@ case class InsertBuilder[R <: HList, PK<:HList, CK <: HList,  I <: HList](
         bs
       }
       def read(r: AsyncResultSet, protocolVersion: ProtocolVersion): Either[Throwable, Option[R]] = { ???
+        // TODO: neresit (K)
+        //TODO: na pavla
+        // A dml execute by volat pouze funkce read(r: Row...
+
 //        Option(r.one()) match {
 //          case None => Right(None)
 //          case Some(row) => read(row,protocolVersion)

@@ -1,14 +1,19 @@
 package spinoco.fs2.cassandra.util
 
+import fs2._
 import cats.effect.{Async, ContextShift}
+import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, Row}
 
 import java.util.concurrent.CompletionStage
 import java.util.function.BiConsumer
 
 object concurrent {
 
-  implicit class CompletionStageSyntax[A](val self: CompletionStage[A]) extends AnyVal {
+  implicit class AsyncResultSetStageSyntax(val self: AsyncResultSet) extends AnyVal {
+    def toStream[F[_]] : Stream[F, Row] = ??? // TODO: poprosit Adama / Pavla / ...
+  }
 
+  implicit class CompletionStageSyntax[A](val self: CompletionStage[A]) extends AnyVal {
     /**
       * Converts the `CompletionStage` to an `F`.
       * Note that hence the `self` exists already, the completion stage (or future that is backed by this) is
@@ -19,6 +24,7 @@ object concurrent {
       * @tparam F
       * @return
       */
+      //Async[F]
     def toF[F[_] : Async] : F[A] = concurrent.completionStageToFUnsafe(self)
   }
 

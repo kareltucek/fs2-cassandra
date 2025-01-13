@@ -4,6 +4,7 @@ import cats.{Applicative}
 import cats.effect._
 import cats.implicits._
 import com.datastax.oss.driver.api.core.cql._
+import com.datastax.oss.driver.api.core.cql.{BatchStatement => CBatchStatement}
 import com.datastax.oss.driver.api.core.{CqlSession, CqlSessionBuilder, ProtocolVersion}
 import fs2._
 import shapeless.HNil
@@ -161,7 +162,8 @@ object CassandraSession {
           CassandraSession.queryRows(cqlStatement(cql, o))
 
         def queryStatement(boundStatement: BoundStatement): Stream[F, Row] =
-          ??? // CassandraSession.queryRows(boundStatement, Options.defaultQuery)
+          CassandraSession.queryRows(boundStatement)
+          // CassandraSession.queryRows(boundStatement, Options.defaultQuery)
 
         def page[Q, R](query: Query[Q, R], o:QueryOptions = Options.defaultQuery)(q: Q): Stream[F, Either[Option[PagingState], R]] =
           CassandraSession.pageQuery(query,o,q)
@@ -170,7 +172,8 @@ object CassandraSession {
           CassandraSession.pageQueryRows(cqlStatement(cql, o))
 
         def pageStatement(boundStatement: BoundStatement): Stream[F, Either[Option[PagingState], Row]] =
-          ??? // CassandraSession.pageQueryRows(boundStatement,Options.defaultQuery)
+          CassandraSession.pageQueryRows(boundStatement)
+          // CassandraSession.pageQueryRows(boundStatement,Options.defaultQuery)
 
         def prepareCql(cql: String): F[PreparedStatement] =
           Sync[F].suspend(cqlSession.prepareAsync(cql).toF)
@@ -178,22 +181,29 @@ object CassandraSession {
         def executeBatch[I, R](batch: BatchStatement[I, R], o: DMLOptions= Options.defaultDML)(i: I): F[Option[R]] =
           CassandraSession.executeBatch(batch,o,i)
 
-        def bindStatement[I](statement: DMLStatement[I, _], o: DMLOptions)(i: I): F[BoundStatement] =
-          ??? // mkStatement(statement,i).map { bs => Options.applyDMLOptions(bs,o)}
+        def bindStatement[I](statement: DMLStatement[I, _], o: DMLOptions)(i: I): F[BoundStatement] = {
+          mkStatement[F, I](statement,i)
+            .map { bs => Options.applyDMLOptions(bs,o) }
+        }
+        // mkStatement(statement,i).map { bs => Options.applyDMLOptions(bs,o)}
 
-        def executeBatchRaw(statements: Seq[BoundStatement], logged: Boolean): F[AsyncResultSet] =
-          CassandraSession.executeBatchRaw(statements,logged)
+        def executeBatchRaw(statements: Seq[BoundStatement], logged: Boolean): F[AsyncResultSet] = {
+          implicit def cqlSession_ = cqlSession
+          CassandraSession.executeBatchRaw(statements, logged)
+        }
       }
     }
 
   }
 
 
-  def executeBatchRaw[F[_]](statements: Seq[BoundStatement], logged: Boolean): F[AsyncResultSet] = { ???
-//    val tpe = if (logged) CBatchStatement.Type.LOGGED else CBatchStatement.Type.UNLOGGED
-//    val batch = new CBatchStatement(tpe)
-//    batch.addAll(statements.asJava)
-//    Sync[F].suspend(cs.executeAsync(batch))
+  def executeBatchRaw[F[_] : Async](statements: Seq[BoundStatement], logged: Boolean)(implicit cqlSession: CqlSession): F[AsyncResultSet] = { ???
+    val tpe = if(logged) BatchType.LOGGED else BatchType.UNLOGGED
+    val batch = CBatchStatement.builder(tpe)
+      .addStatements(statements: _*)
+      .build()
+
+    Sync[F].suspend(cqlSession.executeAsync(batch).toF)
   }
 
   def mkStatement[F[_], I](statement:CStatement[I], i:I): F[BoundStatement] = { ???
@@ -288,7 +298,7 @@ object CassandraSession {
   ](statement: DMLStatement[I, R], o: DMLOptions, i: I, version: ProtocolVersion)(implicit cqlSession: CqlSession): F[R] = {
     StatementHelper[F].prepare(statement.cqlStatement).flatMap { ps =>
       val builder = statement.fill(i, ps, version) //todo: apply options
-      Sync[F].suspend(cqlSession.executeAsync(builder.build()).toF)
+      Sync[F].suspend(cqlSession.executeAsync(builder).toF)
     }
 
     mkStatement[F,I](statement,i).flatMap { bs =>
