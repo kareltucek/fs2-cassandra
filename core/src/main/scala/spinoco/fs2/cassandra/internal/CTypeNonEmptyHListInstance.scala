@@ -47,7 +47,7 @@ object CTypeNonEmptyHListInstance {
         CT.cqlCodec(protocolVersion)
           .encode(r.head)
           .map { bv => data.setBytesUnsafe(idx, bv.toByteBuffer) }
-          //.wait()
+          .wait()
       }
       // { data.setBytesUnsafe(idx,CT.serialize(r.head,protocolVersion)); () }
 

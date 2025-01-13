@@ -182,8 +182,8 @@ object CassandraSession {
           CassandraSession.executeBatch(batch,o,i)
 
         def bindStatement[I](statement: DMLStatement[I, _], o: DMLOptions)(i: I): F[BoundStatement] = {
-          mkStatement[F, I](statement,i)
-            .map { bs => Options.applyDMLOptions(bs,o) }
+          implicit def cqlSession_ = cqlSession
+          mkStatement[F, I](statement,i).map { bs => Options.applyDMLOptions(bs,o) }
         }
         // mkStatement(statement,i).map { bs => Options.applyDMLOptions(bs,o)}
 
@@ -196,6 +196,10 @@ object CassandraSession {
 
   }
 
+  def getOrRegisterStatement[F[_] : Async](cql:String)(implicit cqlSession: CqlSession): F[PreparedStatement] = {
+    // TODO: caching
+    Sync[F].suspend(cqlSession.prepareAsync(cql).toF[F])
+  }
 
   def executeBatchRaw[F[_] : Async](statements: Seq[BoundStatement], logged: Boolean)(implicit cqlSession: CqlSession): F[AsyncResultSet] = { ???
     val tpe = if(logged) BatchType.LOGGED else BatchType.UNLOGGED
@@ -206,10 +210,10 @@ object CassandraSession {
     Sync[F].suspend(cqlSession.executeAsync(batch).toF)
   }
 
-  def mkStatement[F[_], I](statement:CStatement[I], i:I): F[BoundStatement] = { ???
-//    getOrRegisterStatement(statement.cqlStatement).map { ps =>
-//      statement.fill(i,ps, protocolVersion)
-//    }
+  def mkStatement[F[_] : Async, I](statement:CStatement[I], i:I)(implicit cqlSession: CqlSession): F[BoundStatement] = {
+    getOrRegisterStatement[F](statement.cqlStatement).map { ps =>
+      statement.fill(i,ps, cqlSession.getContext.getProtocolVersion  )
+    }
   }
 
 

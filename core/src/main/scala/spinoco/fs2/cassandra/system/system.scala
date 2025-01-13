@@ -5,7 +5,6 @@ import com.datastax.oss.driver.api.core.`type`.DataType
 import com.datastax.oss.driver.api.core.metadata.schema.{ClusteringOrder, ColumnMetadata, KeyspaceMetadata, TableMetadata, ViewMetadata}
 
 import scala.collection.JavaConverters._
-import scala.collection.immutable.ListMap
 
 package object system {
 

@@ -30,7 +30,7 @@ object CTypeNonEmptyRecordInstance {
       val k = keyOf(wt)
       val types = Seq(k -> tpe.cqlType)
       def readAt(index:Int, data: GettableByIndex, protocolVersion: ProtocolVersion): Either[Throwable, ::[FieldType[K, V], HNil]] =
-       // tpe.deserialize(ByteVector.view(data.getBytesUnsafe(index)), protocolVersion).right.map(v => field[K](v) :: HNil).left.map(AnnotatedException.withField(_, k))
+       ???// tpe.deserialize(ByteVector.view(data.getBytesUnsafe(index)), protocolVersion).right.map(v => field[K](v) :: HNil).left.map(AnnotatedException.withField(_, k))
       def read(data: GettableByIndex, protocolVersion: ProtocolVersion): Either[Throwable, ::[FieldType[K, V], HNil]] =
        ??? //  readAt(0,data,protocolVersion).left.map(AnnotatedException.withField(_, k))
       def readByName(data: GettableByName, protocolVersion: ProtocolVersion): Either[Throwable, ::[FieldType[K, V], HNil]] = {
