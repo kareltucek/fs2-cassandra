@@ -43,7 +43,6 @@ package object system {
 
   /** checks whether these two columns are of the same name and type **/
   def sameColumnDef(nameA:String, tpeA:DataType)(nameB:String, tpeB:DataType):Boolean = { ???
-    //TODO: na pavla
     tpeA.toString == tpeB.toString
     /*
     lazy val argsA = tpeA.getTypeArguments.asScala.map(_.getName)
@@ -125,6 +124,7 @@ package object system {
 
         ???
 
+        //TODO: na pavla: odkud vzit getBaseTable
        /* if (desiredView.name != current.getName) Nil
         else if (!samePrimaryKey(current.getBaseTable, desiredView.table)) desiredView.cqlStatement
         else if (!samePrimaryKey(current, desiredView) || !sameColumns) s"DROP MATERIALIZED VIEW ${desiredView.fullName}" +: desiredView.cqlStatement

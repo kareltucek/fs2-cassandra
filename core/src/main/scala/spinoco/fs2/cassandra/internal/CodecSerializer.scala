@@ -7,7 +7,7 @@ import spinoco.fs2.cassandra.CType
 
 import java.nio.ByteBuffer
 
-object CodecSerializeSyntax {
+object CodecSerializer {
   implicit class CodecSerializeSyntax[V](val self: CType[V]) extends AnyVal {
     def serialize(v: V, protocolVersion: ProtocolVersion): Attempt[ByteBuffer] = {
       self

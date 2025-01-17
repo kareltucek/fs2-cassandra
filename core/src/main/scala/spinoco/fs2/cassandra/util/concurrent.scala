@@ -1,17 +1,12 @@
 package spinoco.fs2.cassandra.util
 
-import fs2._
 import cats.effect.{Async, ContextShift}
-import com.datastax.oss.driver.api.core.cql.{AsyncResultSet, Row}
 
 import java.util.concurrent.CompletionStage
 import java.util.function.BiConsumer
 
 object concurrent {
 
-  implicit class AsyncResultSetStageSyntax(val self: AsyncResultSet) extends AnyVal {
-    def toStream[F[_]] : Stream[F, Row] = ??? // TODO: poprosit Adama / Pavla / ...
-  }
 
   implicit class CompletionStageSyntax[A](val self: CompletionStage[A]) extends AnyVal {
     /**
@@ -48,7 +43,6 @@ object concurrent {
       })
       (); // ignore the result of whenComplete
     }
-
   }
 
   /** syntax helper for shifting the `F` with ContextShift */
