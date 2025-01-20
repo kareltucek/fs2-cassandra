@@ -1,13 +1,17 @@
 package spinoco.fs2.cassandra.support
 
 import cats.effect.{ContextShift, IO}
+import com.datastax.oss.driver.api.core.config.{DefaultDriverOption, DriverConfigLoader}
 import com.datastax.oss.driver.api.core.{CqlSession, CqlSessionBuilder}
 import fs2.Stream._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
 import spinoco.fs2.cassandra.{CassandraCluster, CassandraSession}
 
+import java.net.InetSocketAddress
+import java.time.Duration
 import scala.concurrent.{ExecutionContext, SyncVar}
 import scala.sys.process.{Process, ProcessLogger}
+
 
 
 /**
@@ -36,11 +40,16 @@ trait DockerCassandra
   // Port where CQL interface is available
   lazy val cqlPort: Int = 12000
 
-  def clusterConfig: CqlSessionBuilder = ???
-//    Cluster.builder()
-//      .addContactPoint(s"127.0.0.1")
-//      .withPort(cqlPort)
-//      .withReconnectionPolicy(new ConstantReconnectionPolicy(5000))
+  def clusterConfig: CqlSessionBuilder = {
+    val loader = DriverConfigLoader
+      .programmaticBuilder
+      .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofMillis(5000))
+      .withClass(DefaultDriverOption.RECONNECTION_POLICY_CLASS, classOf[Nothing])
+      .build
+    CqlSession.builder()
+      .withConfigLoader(loader)
+      .addContactPoint(InetSocketAddress.createUnresolved(s"127.0.0.1", cqlPort))
+  }
 
 
   private var dockerInstanceId: Option[String] = None
@@ -48,13 +57,20 @@ trait DockerCassandra
    var sessionInstance:Option[(CqlSession, CassandraSession[IO])] = None
 
 
-  def withCluster(f: CassandraCluster[IO] => Any): Unit = {
-    clusterInstance match {
-      case None => throw new Throwable("Cassandra Cluster not ready")
-      case Some(_) => ???
-//        val ct = CassandraCluster.impl.create[IO](c).unsafeRunSync()
-//        f(ct)
-//        ()
+//  def withCluster(f: CassandraCluster[IO] => Any): Unit = {
+//    clusterInstance match {
+//      case None => throw new Throwable("Cassandra Cluster not ready")
+//      case Some(_) => ???
+////        val ct = CassandraCluster.impl.create[IO](c).unsafeRunSync()
+////        f(ct)
+////        ()
+//    }
+//  }
+
+  def withCluster(f: CassandraCluster[IO] => Any):Unit = {
+    sessionInstance match {
+      case None => throw new Throwable("Cassandra session not yet ready")
+      case Some((_,cs)) => f(CassandraCluster.wrap(cs)); ()
     }
   }
 
@@ -67,26 +83,22 @@ trait DockerCassandra
 
 
   override protected def beforeAll(): Unit = {
-     ???
-//    super.beforeAll()
-//    if (startContainers) {
-//      assertDockerAvailable
-//      downloadCImage(cassandra)
-//      dockerInstanceId = Some(startCassandra(cassandra, cqlPort))
-//    }
-//    val cluster = clusterConfig.build()
-//    clusterInstance = Some(cluster)
-//    val session = cluster.connect()
-//    val cs = CassandraSession.impl.mkSession[IO](session,cluster.getConfiguration.getProtocolOptions.getProtocolVersion).unsafeRunSync()
-//    sessionInstance = Some(session -> cs)
+    super.beforeAll()
+    if (startContainers) {
+      assertDockerAvailable
+      downloadCImage(cassandra)
+      dockerInstanceId = Some(startCassandra(cassandra, cqlPort))
+    }
+    val session = clusterConfig.build()
+    val cs = CassandraSession.impl.mkSession[IO](session, session.getContext.getProtocolVersion).unsafeRunSync()
+    sessionInstance = Some(session -> cs)
   }
 
 
-  override protected def afterAll(): Unit = { ???
-//    sessionInstance.foreach(_._1.close())
-//    clusterInstance.foreach(_.close())
-//    dockerInstanceId.foreach(stopCassandra(cassandra,_,clearContainers))
-//    super.afterAll()
+  override protected def afterAll(): Unit = {
+    sessionInstance.foreach(_._1.close())
+    dockerInstanceId.foreach(stopCassandra(cassandra,_,clearContainers))
+    super.afterAll()
   }
 
   override protected def beforeEach(): Unit = {
