@@ -191,27 +191,23 @@ object Options {
   def pageFrom(page:PagingState):QueryOptions =
     defaultQuery.startFrom(page)
 
-  private[cassandra] def applyQueryOptions[S <: Statement[S]](stmt:S, o:QueryOptions):S = ??? //{
-////    o.consistencyLevel.foreach(stmt.setConsistencyLevel)
-////    o.fetchSize.foreach(stmt.setFetchSize)
-////    o.pagingState.foreach(stmt.setPagingState)
-////    o.readTimeout.map(_.toMillis.toInt).foreach(stmt.setReadTimeoutMillis)
-////    o.retryPolicy.foreach(stmt.setRetryPolicy)
-////    o.tracing.foreach{ tracing => if (tracing) stmt.enableTracing() else stmt.disableTracing() }
-////    stmt
-//    ???
-//  }
-//
-  private[cassandra] def applyDMLOptions[S <: Statement[S]](stmt:S, o:DMLOptions):S = ??? // {
-////    o.consistencyLevel.foreach(stmt.setConsistencyLevel)
-////    o.serialConsistencyLevel.foreach(stmt.setSerialConsistencyLevel)
-////    o.retryPolicy.foreach(stmt.setRetryPolicy)
-////    o.defaultTimeStamp.foreach(stmt.setDefaultTimestamp)
-////    o.idempotent.foreach(stmt.setIdempotent)
-////    o.tracing.foreach{ tracing => if (tracing) stmt.enableTracing() else stmt.disableTracing() }
-////    stmt
-//    ???
-//  }
+  private[cassandra] def applyQueryOptions[S <: Statement[S]](stmt:S, o:QueryOptions):S = {
+    o.consistencyLevel.foreach(stmt.setConsistencyLevel)
+    o.fetchSize.foreach(stmt.setPageSize)
+    o.pagingState.foreach(stmt.setPagingState)
+    o.tracing.foreach(stmt.setTracing)
+    stmt
+  }
+
+  private[cassandra] def applyDMLOptions[S <: Statement[S]](stmt:S, o:DMLOptions):S = {
+    o.consistencyLevel.foreach(stmt.setConsistencyLevel)
+    o.serialConsistencyLevel.foreach(stmt.setSerialConsistencyLevel)
+    //o.retryPolicy.foreach(stmt.setRetryPolicy)
+    //o.defaultTimeStamp.foreach(stmt.setDefaultTimestamp)
+    o.idempotent.foreach(stmt.setIdempotent(_))
+    o.tracing.foreach(stmt.setTracing)
+    stmt
+  }
 
 }
 

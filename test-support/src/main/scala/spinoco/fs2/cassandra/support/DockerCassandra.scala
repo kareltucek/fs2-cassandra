@@ -44,28 +44,17 @@ trait DockerCassandra
     val loader = DriverConfigLoader
       .programmaticBuilder
       .withDuration(DefaultDriverOption.RECONNECTION_BASE_DELAY, Duration.ofMillis(5000))
-      .withClass(DefaultDriverOption.RECONNECTION_POLICY_CLASS, classOf[Nothing])
       .build
     CqlSession.builder()
       .withConfigLoader(loader)
       .addContactPoint(InetSocketAddress.createUnresolved(s"127.0.0.1", cqlPort))
+      .withLocalDatacenter("datacenter1")
   }
 
 
   private var dockerInstanceId: Option[String] = None
   private var clusterInstance: Option[CqlSessionBuilder] = None
    var sessionInstance:Option[(CqlSession, CassandraSession[IO])] = None
-
-
-//  def withCluster(f: CassandraCluster[IO] => Any): Unit = {
-//    clusterInstance match {
-//      case None => throw new Throwable("Cassandra Cluster not ready")
-//      case Some(_) => ???
-////        val ct = CassandraCluster.impl.create[IO](c).unsafeRunSync()
-////        f(ct)
-////        ()
-//    }
-//  }
 
   def withCluster(f: CassandraCluster[IO] => Any):Unit = {
     sessionInstance match {

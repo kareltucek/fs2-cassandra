@@ -15,8 +15,6 @@ trait CassandraCluster[F[_]] {
 
 }
 
-//
-//
 object CassandraCluster {
 
   //  @inline def apply[F[_]](implicit instance: CassandraCluster[F]): CassandraCluster[F] = instance
